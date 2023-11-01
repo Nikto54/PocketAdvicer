@@ -1,61 +1,66 @@
-import asyncio
-from aiogram import Bot, Dispatcher, types, F
-
-from aiogram.filters.command import Command
-import os
-
-from aiogram.utils.formatting import Text
-from dotenv import load_dotenv
+import telebot
+from matplotlib import pyplot as plt
+from telebot import types
+from translate import Translator
 from textblob import TextBlob
+from fer import FER
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+detector = FER()
+bot = telebot.TeleBot('6317401550:AAG1C7BEb47jr4IFAzuktRvl6HOdKC7mnl4')
 
-load_dotenv()
-GREET_TEXT="Привет, это бот, который на основе вашего голосового сообщения, текстового сообщения, "\
-                         "фотографии или видео выдаст подборку музыки для вашего настроения.\n\n"\
-                         "Нажми кнопку ниже и выбери, что конкретно ты хочешь мне отправить!"
+@bot.message_handler(commands=['start'])
+def start_message(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    item1 = types.KeyboardButton('Текстовое сообщение')
+    item2 = types.KeyboardButton('Аудио сообщение')
+    item3 = types.KeyboardButton('Фото')
+    markup.add(item1, item2, item3)
+    bot.send_message(message.chat.id, 'Привет, я бот который на основе аудиофайла, текстового сообщения '
+                                      'или же фото смогу подобрать музыку по твоему настроению', reply_markup=markup)
 
-TOKEN = os.getenv('TELEGRAM_TOKEN')
+@bot.message_handler(func=lambda message: True)
+def handle_message(message):
+    if message.text == 'Текстовое сообщение':
+        bot.send_message(message.chat.id, 'Введите текстовое сообщение:')
+        bot.register_next_step_handler(message, process_text_message)
+    elif message.text == 'Аудио сообщение':
+        # Добавьте код для обработки аудио сообщения
+        pass
+    elif message.text == 'Фото':
+        bot.send_message(message.chat.id, 'Пришлите фотографию')
+        bot.register_next_step_handler(message, process_photo_message)
 
+def process_text_message(message):
+    text = message.text
+    translator = Translator(from_lang='ru',to_lang="en")
+    translated_text = translator.translate(text)
+    print(translated_text,text)
 
-bot = Bot(token=TOKEN)
-dp = Dispatcher()
-
-BUTTONS=("голосовое сообщение","текстовое сообщение","видео","фотография")
-def detect_sentiment(text):
-    blob = TextBlob(text)
+    blob = TextBlob(translated_text)
     sentiment = blob.sentiment.polarity
 
     if sentiment > 0:
-        return sentiment
+        bot.send_message(message.chat.id,"Положительное настроение")
     elif sentiment < 0:
-        return sentiment
+        bot.send_message(message.chat.id, "Отрицательное настроение")
     else:
-        return sentiment
+        bot.send_message(message.chat.id,"Нейтральное настроение")
 
-@dp.message(Command("start"))
-async def start_buttons(message: types.Message):
-    kb = [
-        [types.KeyboardButton(text="Голосовое сообщение"),
-         types.KeyboardButton(text="Текстовое сообщение")],
-        [types.KeyboardButton(text="Видео"),
-         types.KeyboardButton(text="Фотографию")]
-    ]
-    keyboard = types.ReplyKeyboardMarkup(keyboard=kb,resize_keyboard=True,input_field_placeholder="Выберите тип"
-                                                                                                  " сообщения")
-    await message.answer(GREET_TEXT, reply_markup=keyboard)
-
-@dp.message(lambda message: message.text.lower() in BUTTONS)
-async def button_reply(message: types.Message):
-    await message.answer(f'Пришли мне {message.text.lower()},в формате \n<<{message.text}\nсамо сообщение>>\nчтобы я cмог '
-                    f' выдать тебе результат!',reply_markup=types.ReplyKeyboardRemove())
-
-@dp.message(F.text)
-async def analize(message:types.Message):
-    print(detect_sentiment(message.text))
+def process_photo_message(message):
+    translator = Translator(from_lang='en', to_lang="ru")
+    photo = message.photo[-1]
+    file_id = photo.file_id
+    file_info = bot.get_file(file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+    photo_path = r'C:\Users\Богдан ебик\PycharmProjects\PocketAdvicer\photo.jpg'
+    with open(photo_path, 'wb') as photo_file:
+        photo_file.write(downloaded_file)
+    test_image_one = plt.imread(r"C:\Users\Богдан ебик\PycharmProjects\PocketAdvicer\photo.jpg")
+    emo_detector = FER(mtcnn=True)
+    dominant_emotion, emotion_score = emo_detector.top_emotion(test_image_one)
+    bot.send_message(message.chat.id, f'Эмоция {translator.translate(dominant_emotion)}')
+    os.remove(r"C:\Users\Богдан ебик\PycharmProjects\PocketAdvicer\photo.jpg")
 
 
-
-async def main():
-    await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
-if __name__ == "__main__":
-    asyncio.run(main())
+bot.polling()
