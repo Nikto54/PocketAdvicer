@@ -5,6 +5,10 @@ from translate import Translator
 from textblob import TextBlob
 from fer import FER
 import os
+import requests
+import speech_recognition as sr
+import soundfile as sf
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 detector = FER()
 bot = telebot.TeleBot('6317401550:AAG1C7BEb47jr4IFAzuktRvl6HOdKC7mnl4')
@@ -25,8 +29,9 @@ def handle_message(message):
         bot.send_message(message.chat.id, 'Введите текстовое сообщение:')
         bot.register_next_step_handler(message, process_text_message)
     elif message.text == 'Аудио сообщение':
-        # Добавьте код для обработки аудио сообщения
-        pass
+        bot.send_message(message.chat.id, 'Пришлите аудиофайл')
+        bot.register_next_step_handler(message, process_audio_message)
+
     elif message.text == 'Фото':
         bot.send_message(message.chat.id, 'Пришлите фотографию')
         bot.register_next_step_handler(message, process_photo_message)
@@ -35,7 +40,6 @@ def process_text_message(message):
     text = message.text
     translator = Translator(from_lang='ru',to_lang="en")
     translated_text = translator.translate(text)
-    print(translated_text,text)
 
     blob = TextBlob(translated_text)
     sentiment = blob.sentiment.polarity
@@ -62,5 +66,36 @@ def process_photo_message(message):
     bot.send_message(message.chat.id, f'Эмоция {translator.translate(dominant_emotion)}')
     os.remove(r"C:\Users\Богдан ебик\PycharmProjects\PocketAdvicer\photo.jpg")
 
+def process_audio_message(message):
+    file_info = bot.get_file(message.voice.file_id)
+    file = requests.get('https://api.telegram.org/file/bot{0}/{1}'.format('6317401550:AAG1C'
+                                                                          '7BEb47jr4IFAzuktRvl6HOdKC7mnl4',
+                                                                          file_info.file_path))
 
-bot.polling()
+    with open('voice.ogg', 'wb') as f:
+        f.write(file.content)
+    data, samplerate = sf.read(r"C:\Users\Богдан ебик\PycharmProjects\PocketAdvicer\voice.ogg")
+    sf.write(r"C:\Users\Богдан ебик\PycharmProjects\PocketAdvicer\voice.wav", data, samplerate)
+
+    ps=sr.Recognizer()
+    with sr.AudioFile('voice.wav') as source:
+        audio_data = ps.record(source)
+
+    speech_text = ps.recognize_google(audio_data, language="ru")
+    translator = Translator(from_lang='ru', to_lang="en")
+    translated_text = translator.translate(speech_text)
+
+    blob = TextBlob(translated_text)
+    sentiment = blob.sentiment.polarity
+
+    if sentiment > 0:
+        bot.send_message(message.chat.id, "Положительное настроение")
+    elif sentiment < 0:
+        bot.send_message(message.chat.id, "Отрицательное настроение")
+    else:
+        bot.send_message(message.chat.id, "Нейтральное настроение")
+
+
+
+
+bot.polling(none_stop=True)
