@@ -1,25 +1,41 @@
+import os
 import random
-
 import torch
 from aniemore.recognizers.text import TextRecognizer
 from aniemore.recognizers.voice import VoiceRecognizer
 from aniemore.models import HuggingFaceModel
 import requests
 import soundfile as sf
+from fer import FER
+import cv2
+from matplotlib import pyplot as plt
+
 
 API_LINK = 'https://api.kinopoisk.dev/v1.4/movie?genres.name={genres_name}&page{count}'
 
+TRANSLATE_DICT={
+                'angry':'злость',
+                'fear':'страх',
+                'happy':'счастье',
+                'neutral':'нейтральное',
+                'sad':'грусть',
+                'surprise':'удивление'
+                }
 
 def process_text_message(message, bot):
-    text = message.text
-    model = HuggingFaceModel.Text.Bert_Tiny2
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    tr = TextRecognizer(model=model, device=device)
+    try:
+        text = message.text
+        model = HuggingFaceModel.Text.Bert_Tiny2
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        tr = TextRecognizer(model=model, device=device)
+        emot = tr.recognize(text, return_single_label=True)
+        bot.send_message(message.chat.id, f'Ваша основная эмоция сейчас: {emot}')
+        message = bot.send_message(message.chat.id, f'Начинается поиск фильма для вас\nПодождите пару секунд')
+        found_film(message, bot, emot)
+    except:
+        bot.register_next_step_handler(message, bot)
+        bot.send_message(message.chat.id,'Введите тот тип сообщения который указывали выше!')
 
-    emot = tr.recognize(text, return_single_label=True)
-    bot.send_message(message.chat.id, f'Ваша основная эмоция сейчас: {emot}')
-    message = bot.send_message(message.chat.id, f'Начинается поиск фильма для вас\nПодождите пару секунд')
-    found_film(message, bot, emot)
 
 
 def process_audio_message(message, bot):
@@ -42,19 +58,19 @@ def process_audio_message(message, bot):
     found_film(message, bot, emot)
 
 
-# def process_photo_message(message):
-#     photo = message.photo[-1]
-#     file_id = photo.file_id
-#     file_info = bot.get_file(file_id)
-#     downloaded_file = bot.download_file(file_info.file_path)
-#     photo_path = r'C:\Users\Богдан ебик\PycharmProjects\PocketAdvicer\photo.jpg'
-#     with open(photo_path, 'wb') as photo_file:
-#         photo_file.write(downloaded_file)
-#     test_image_one = plt.imread(r"C:\Users\Богдан ебик\PycharmProjects\PocketAdvicer\photo.jpg")
-#     emo_detector = FER(mtcnn=True)
-#     dominant_emotion, emotion_score = emo_detector.top_emotion(test_image_one)
-#     bot.send_message(message.chat.id, f'Эмоция {translator.translate(dominant_emotion)}')
-#     os.remove(r"C:\Users\Богдан ебик\PycharmProjects\PocketAdvicer\photo.jpg")
+def process_photo_message(message,bot):
+    photo = message.photo[-1]
+    file_id = photo.file_id
+    file_info = bot.get_file(file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+    photo_path = 'photo.jpg'
+    detector = FER(mtcnn=True)
+    with open(photo_path, 'wb') as photo_file:
+        photo_file.write(downloaded_file)
+    test_image_one = plt.imread("photo.jpg")
+    dominant_emotion, emotion_score = detector.top_emotion(test_image_one)
+    bot.send_message(message.chat.id, f'Эмоция {TRANSLATE_DICT.get(dominant_emotion,dominant_emotion)}')
+    os.remove("photo.jpg")
 
 
 def found_film(message, bot, emot):
