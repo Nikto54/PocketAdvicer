@@ -40,4 +40,5 @@ def handle_message(message):
     #     bot.register_next_step_handler(message, process_photo_message, bot)
 
 
-bot.polling()
+if __name__ == '__main__':
+    bot.polling()

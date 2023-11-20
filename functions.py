@@ -1,3 +1,6 @@
+"""
+Функционал нашего бота
+"""
 import random
 
 import torch
@@ -7,22 +10,38 @@ from aniemore.models import HuggingFaceModel
 import requests
 import soundfile as sf
 
-API_LINK = 'https://api.kinopoisk.dev/v1.4/movie?genres.name={genres_name}&page{count}'
+API_LINK = 'https://api.kinopoisk.dev/v1.4/movie?genres.name={genres_name}&page={count}'
 
 
 def process_text_message(message, bot):
-    text = message.text
-    model = HuggingFaceModel.Text.Bert_Tiny2
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    tr = TextRecognizer(model=model, device=device)
+    try:
+        """
+    
+        :param message: 
+        :param bot: 
+    
+        """
+        text = message.text
+        model = HuggingFaceModel.Text.Bert_Tiny2
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        tr = TextRecognizer(model=model, device=device)
 
-    emot = tr.recognize(text, return_single_label=True)
-    bot.send_message(message.chat.id, f'Ваша основная эмоция сейчас: {emot}')
-    message = bot.send_message(message.chat.id, f'Начинается поиск фильма для вас\nПодождите пару секунд')
-    found_film(message, bot, emot)
+        emot = tr.recognize(text, return_single_label=True)
+        bot.send_message(message.chat.id, f'Ваша основная эмоция сейчас: {emot}')
+        message = bot.send_message(message.chat.id, f'Начинается поиск фильма для вас\nПодождите пару секунд')
+        found_film(message, bot, emot)
+    except:
+        bot.send_message(message.chat.id, 'Вы ввели залупу, Введите текстовое сообщение:')
+        bot.register_next_step_handler(message, process_text_message, bot)
 
 
 def process_audio_message(message, bot):
+    """
+
+    :param message: 
+    :param bot: 
+
+    """
     file_info = bot.get_file(message.voice.file_id)
     file = requests.get('https://api.telegram.org/file/bot{0}/{1}'.format(
         '6317401550:AAG1C'
@@ -58,6 +77,13 @@ def process_audio_message(message, bot):
 
 
 def found_film(message, bot, emot):
+    """
+
+    :param message: 
+    :param bot: 
+    :param emot: 
+
+    """
     response = requests.get(
         API_LINK.format(
             genres_name='драма',
