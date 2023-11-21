@@ -31,9 +31,19 @@ TRANSLATE_DICT_TEXT = {
 
 }
 
-
-def api_request():
-    pass
+GENRE_DICT = {
+            'anger': 'драма',
+            'enthusiasm': 'экшн',
+            'fear': 'триллер',
+            'sadness': 'романтика',
+            'happiness': 'комедия',
+            'disgust': 'ужасы',
+            'angry': 'боевик',
+            'happy': 'мюзикл',
+            'neutral': 'документальный',
+            'sad': 'драмеди',
+            'surprise': 'фантастика'
+        }
 
 
 def process_text_message(message, bot):
@@ -105,37 +115,28 @@ def process_photo_message(message, bot):
 
 
 def found_film(message, bot, emot):
-    GENRE_DICT = {
-        'anger': 'драма',
-        'enthusiasm': 'экшн',
-        'fear': 'триллер',
-        'sadness': 'романтика',
-        'happiness': 'комедия',
-        'disgust': 'ужасы',
-        'angry': 'боевик',
-        'happy': 'мюзикл',
-        'neutral': 'документальный',
-        'sad': 'драмеди',
-        'surprise': 'фантастика'
-    }
-    response = requests.get(
-        API_LINK.format(
-            genres_name=GENRE_DICT[emot],
-            count=random.randint(1, 1000)
-        ),
-        headers={
-            'X-API-KEY': 'B3GFJ69-3MTMFV1-G4JQFRX-9194539',
-        }
-    ).json()
-    response = response['docs'][random.randint(0, 9)]
-    bot.edit_message_text(
-        f'<b>{response["names"][0]["name"]} ({response["names"][1]["name"]})</b>\n\n'
-        f'{response["description"]}',
-        chat_id=message.chat.id,
-        message_id=message.message_id,
-        parse_mode='HTML',
-    )
-    bot.send_photo(message.chat.id, response["poster"]["url"])
+    try:
+        response = requests.get(
+            API_LINK.format(
+                genres_name=GENRE_DICT[emot],
+                count=random.randint(1, 1000)
+            ),
+            headers={
+                'X-API-KEY': 'B3GFJ69-3MTMFV1-G4JQFRX-9194539',
+            }
+        ).json()
+        response = response['docs'][random.randint(0, 9)]
+        bot.edit_message_text(
+            f'<b>{response["names"][0]["name"]} ({response["names"][1]["name"]})</b>\n\n'
+            f'{response["description"]}',
+            chat_id=message.chat.id,
+            message_id=message.message_id,
+            parse_mode='HTML',
+        )
+        bot.send_photo(message.chat.id, response["poster"]["url"])
+    except:
+        found_film(message, bot, emot)
+
 
 def ask_for_another_file(message, bot):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
