@@ -6,8 +6,8 @@ from aniemore.recognizers.voice import VoiceRecognizer
 from aniemore.models import HuggingFaceModel
 import requests
 import soundfile as sf
-from fer import FER
-from matplotlib import pyplot as plt
+# from fer import FER
+# from matplotlib import pyplot as plt
 from telebot import types
 
 API_LINK = 'https://api.kinopoisk.dev/v1.4/movie?genres.name={genres_name}&page={count}'
@@ -41,7 +41,7 @@ GENRE_DICT = {
             'angry': 'боевик',
             'happy': 'мюзикл',
             'neutral': 'документальный',
-            'sad': 'драмеди',
+            'sad': 'драма',
             'surprise': 'фантастика'
         }
 
@@ -91,27 +91,27 @@ def process_audio_message(message, bot):
     os.remove('voice.wav')
 
 
-def process_photo_message(message, bot):
-    try:
-        photo = message.photo[-1]
-        file_id = photo.file_id
-        file_info = bot.get_file(file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
-        photo_path = 'photo.jpg'
-        detector = FER(mtcnn=True)
-        with open(photo_path, 'wb') as photo_file:
-            photo_file.write(downloaded_file)
-        test_image_one = plt.imread("photo.jpg")
-        dominant_emotion, emotion_score = detector.top_emotion(test_image_one)
-        bot.send_message(message.chat.id, f'Эмоция {TRANSLATE_DICT_FER.get(dominant_emotion, dominant_emotion)}')
-        message = bot.send_message(message.chat.id, f'Начинается поиск фильма для вас\nПодождите пару секунд')
-        found_film(message, bot, dominant_emotion)
-        os.remove("photo.jpg")
-        ask_for_another_file(message, bot)
-
-    except:
-        bot.send_message(message.chat.id, 'Вы ввели не тот формат что указали выше!')
-        bot.register_next_step_handler(message, process_photo_message, bot)
+# def process_photo_message(message, bot):
+#     try:
+#         photo = message.photo[-1]
+#         file_id = photo.file_id
+#         file_info = bot.get_file(file_id)
+#         downloaded_file = bot.download_file(file_info.file_path)
+#         photo_path = 'photo.jpg'
+#         detector = FER(mtcnn=True)
+#         with open(photo_path, 'wb') as photo_file:
+#             photo_file.write(downloaded_file)
+#         test_image_one = plt.imread("photo.jpg")
+#         dominant_emotion, emotion_score = detector.top_emotion(test_image_one)
+#         bot.send_message(message.chat.id, f'Эмоция {TRANSLATE_DICT_FER.get(dominant_emotion, dominant_emotion)}')
+#         message = bot.send_message(message.chat.id, f'Начинается поиск фильма для вас\nПодождите пару секунд')
+#         found_film(message, bot, dominant_emotion)
+#         os.remove("photo.jpg")
+#         ask_for_another_file(message, bot)
+#
+#     except:
+#         bot.send_message(message.chat.id, 'Вы ввели не тот формат что указали выше!')
+#         bot.register_next_step_handler(message, process_photo_message, bot)
 
 
 def found_film(message, bot, emot):
@@ -122,7 +122,7 @@ def found_film(message, bot, emot):
                 count=random.randint(1, 1000)
             ),
             headers={
-                'X-API-KEY': 'B3GFJ69-3MTMFV1-G4JQFRX-9194539',
+                'X-API-KEY': '132Z32C-5Y044XJ-H0DXA4A-M5JCFYH',
             }
         ).json()
         response = response['docs'][random.randint(0, 9)]
