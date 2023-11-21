@@ -4,7 +4,7 @@ from telebot import types
 from functions import (
     process_text_message,
     process_audio_message,
-    # process_photo_message,
+    process_photo_message,
 )
 
 bot = telebot.TeleBot('6317401550:AAG1C7BEb47jr4IFAzuktRvl6HOdKC7mnl4')
