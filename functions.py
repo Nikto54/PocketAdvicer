@@ -33,7 +33,7 @@ TRANSLATE_DICT_TEXT = {
 
 GENRE_DICT = {
     'anger': 'драма',
-    'enthusiasm': 'экшн',
+    'enthusiasm': 'фантастика',
     'fear': 'триллер',
     'sadness': 'романтика',
     'happiness': 'комедия',
@@ -44,6 +44,15 @@ GENRE_DICT = {
     'sad': 'драма',
     'surprise': 'фантастика'
 }
+
+
+def ask_for_another_file(message, bot):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    item1 = types.KeyboardButton('Текстовое сообщение')
+    item2 = types.KeyboardButton('Аудио сообщение')
+    item3 = types.KeyboardButton('Фото')
+    markup.add(item1, item2, item3)
+    bot.send_message(message.chat.id, 'Что бы вы хотели анализировать еще?', reply_markup=markup)
 
 
 def process_text_message(message, bot):
@@ -58,8 +67,7 @@ def process_text_message(message, bot):
         found_film(message, bot, emot)
         ask_for_another_file(message, bot)
     except Exception as e:
-        bot.send_message(message.chat.id, e)
-        bot.send_message(message.chat.id, 'Вы ввели залупу, Введите текстовое сообщение:')
+        bot.send_message(message.chat.id, 'Вы ввели не тот формат,что указали выше, Введите текстовое сообщение:')
         bot.register_next_step_handler(message, process_text_message, bot)
 
 
@@ -88,10 +96,8 @@ def process_audio_message(message, bot):
 
 
     except Exception as e:
-        print(e)
         bot.send_message(message.chat.id, 'Вы ввели не тот формат что указали выше!')
         bot.register_next_step_handler(message, process_audio_message, bot)
-
 
 
 def process_photo_message(message, bot):
@@ -108,13 +114,13 @@ def process_photo_message(message, bot):
         dominant_emotion, emotion_score = detector.top_emotion(test_image_one)
         bot.send_message(message.chat.id, f'Эмоция {TRANSLATE_DICT_FER.get(dominant_emotion, dominant_emotion)}')
         message = bot.send_message(message.chat.id, f'Начинается поиск фильма для вас\nПодождите пару секунд')
-        found_film(message, bot, dominant_emotion)
         os.remove("photo.jpg")
+        found_film(message, bot, dominant_emotion)
+
         ask_for_another_file(message, bot)
 
 
     except Exception as e:
-        bot.send_message(message.chat.id, e)
         bot.send_message(message.chat.id, 'Вы ввели не тот формат что указали выше!')
         bot.register_next_step_handler(message, process_photo_message, bot)
 
@@ -129,8 +135,8 @@ def found_film(message, bot, emot):
             'X-API-KEY': '8SA53R6-XVQ4FMS-G1QNRAS-CP57ZJD',
         }
     ).json()
-    response = response['docs'][random.randint(0, 9)]
-    if response['names'][1]:
+    if len(response['docs']) != 0 or response["description"] != None or response['poster'] != None:
+        response = response['docs'][random.randint(0, len(response['docs']) - 1)]
         bot.edit_message_text(
             f'<b>{response["names"][0]["name"]} ({response["names"][1]["name"]})</b>\n\n'
             f'{response["description"]}',
@@ -139,22 +145,6 @@ def found_film(message, bot, emot):
             parse_mode='HTML',
         )
         bot.send_photo(message.chat.id, response["poster"]["url"])
+
     else:
-        bot.edit_message_text(
-            f'<b>{response["names"][0]["name"]}</b>\n\n'
-            f'{response["description"]}',
-            chat_id=message.chat.id,
-            message_id=message.message_id,
-            parse_mode='HTML',
-        )
-        bot.send_photo(message.chat.id, response["poster"]["url"])
-
-
-def ask_for_another_file(message, bot):
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    item1 = types.KeyboardButton('Текстовое сообщение')
-    item2 = types.KeyboardButton('Аудио сообщение')
-    item3 = types.KeyboardButton('Фото')
-    markup.add(item1, item2, item3)
-    bot.send_message(message.chat.id, 'Что бы вы хотели анализировать еще?', reply_markup=markup)
-
+        found_film(message, bot, emot)
