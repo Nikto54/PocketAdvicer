@@ -16,9 +16,10 @@ TRANSLATE_DICT_FER = {
     'angry': 'злость',
     'fear': 'страх',
     'happy': 'счастье',
-    'neutral': 'нейтральное',
+    'neutral': 'нейтральная',
     'sad': 'грусть',
-    'surprise': 'удивление'
+    'surprise': 'удивление',
+    None: 'нейтральная'
 }
 TRANSLATE_DICT_TEXT = {
     'neutral': 'нейтральное',
@@ -35,7 +36,7 @@ GENRE_DICT = {
     'anger': 'драма',
     'enthusiasm': 'фантастика',
     'fear': 'триллер',
-    'sadness': 'романтика',
+    'sadness': 'драма',
     'happiness': 'комедия',
     'disgust': 'ужасы',
     'angry': 'боевик',
@@ -66,6 +67,8 @@ def process_text_message(message, bot):
         message = bot.send_message(message.chat.id, f'Начинается поиск фильма для вас\nПодождите пару секунд')
         found_film(message, bot, emot)
         ask_for_another_file(message, bot)
+
+
     except Exception as e:
         bot.send_message(message.chat.id, 'Вы ввели не тот формат,что указали выше, Введите текстовое сообщение:')
         bot.register_next_step_handler(message, process_text_message, bot)
@@ -112,7 +115,7 @@ def process_photo_message(message, bot):
             photo_file.write(downloaded_file)
         test_image_one = plt.imread("photo.jpg")
         dominant_emotion, emotion_score = detector.top_emotion(test_image_one)
-        bot.send_message(message.chat.id, f'Эмоция {TRANSLATE_DICT_FER.get(dominant_emotion, dominant_emotion)}')
+        bot.send_message(message.chat.id, f'Ваша основная эмоция сейчас: {TRANSLATE_DICT_FER.get(dominant_emotion, dominant_emotion)}')
         message = bot.send_message(message.chat.id, f'Начинается поиск фильма для вас\nПодождите пару секунд')
         os.remove("photo.jpg")
         found_film(message, bot, dominant_emotion)
@@ -132,11 +135,13 @@ def found_film(message, bot, emot):
             count=random.randint(1, 1000)
         ),
         headers={
-            'X-API-KEY': '8SA53R6-XVQ4FMS-G1QNRAS-CP57ZJD',
+            'X-API-KEY': '132Z32C-5Y044XJ-H0DXA4A-M5JCFYH',
         }
     ).json()
-    if len(response['docs']) != 0 or response["description"] != None or response['poster'] != None:
-        response = response['docs'][random.randint(0, len(response['docs']) - 1)]
+    if len(response['docs']) == 0:
+        found_film(message, bot, emot)
+    response = response['docs'][random.randint(0, len(response['docs']) - 1)]
+    if response.get('description') is not None and response.get('poster') != None and len(response['names']) > 1:
         bot.edit_message_text(
             f'<b>{response["names"][0]["name"]} ({response["names"][1]["name"]})</b>\n\n'
             f'{response["description"]}',
