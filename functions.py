@@ -211,7 +211,7 @@ def extends_found_film(message, bot, emot):
         found_film(message, bot, emot)
         bot.send_message(message.chat.id, f'Выберите одну из опций ниже',
                                    reply_markup=markup)
-        bot.register_next_step_handler(message, extends_found_film,*[bot, emot])
+        bot.register_next_step_handler(message, extends_found_film, bot, emot)
     if text == 'Мне нравится фильм':
         print(message.from_user.id)
         add_user(message.from_user.id)
@@ -224,7 +224,7 @@ def extends_found_film(message, bot, emot):
         bot.send_message(message.chat.id, f'Фильм добавлен в ваши предпочтения,в следующий раз будут '
                                                     f'искаться похожие фильмы',
                                    reply_markup=types.ReplyKeyboardRemove())
-        #bot.register_next_step_handler(message, ask_for_another_file(message,bot))
+        bot.register_next_step_handler(message, ask_for_another_file, bot)
 
     if text == 'Мои предпочтения':
 
@@ -238,7 +238,7 @@ def extends_found_film(message, bot, emot):
             bot.send_message(message.chat.id, f'Вас еще нет в нашей базе,поэтому сначала нужно оценить любой фильм '
                                               f'из тех что будут дальше')
             message.text='Случайный фильм'
-            bot.register_next_step_handler(message, extends_found_film(message,bot,emot))
+            extends_found_film(message, bot, emot)
 
 
 
