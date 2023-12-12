@@ -18,9 +18,11 @@ def find_user(tg_id):
 def get_random_year_for_user(user_id):
     conn = create_connection()
     cursor = conn.cursor()
+    print(user_id)
 
     cursor.execute('SELECT year_start, year_end FROM Years WHERE user_id = ?', (user_id,))
     intervals = cursor.fetchall()
+    print(intervals)
 
     conn.close()
 
@@ -71,7 +73,7 @@ def add_country(tg_id, country_name):
     cursor.execute('SELECT * FROM Countries WHERE user_id = ? AND name = ?', (tg_id, country_name))
     count = cursor.fetchone()
 
-    if not count == 0:
+    if not count:
         cursor.execute('INSERT INTO Countries(user_id, name) VALUES (?, ?)', (tg_id, country_name))
         conn.commit()
 
@@ -96,12 +98,25 @@ def add_time_interval(user_id, year_start, year_end):
 connection = create_connection()
 
 cursor = connection.cursor()
+
 cursor.execute('''
-    DROP TABLE IF EXISTS Users ''')
-cursor.execute('''
-    DROP TABLE IF EXISTS Countries ''')
-cursor.execute('''
-    DROP TABLE IF EXISTS Years ''')
+SELECT year_start, year_end FROM Years WHERE user_id = 449408221
+''')
+print(cursor.fetchone())
+
+
+#cursor.execute('''
+    #DROP TABLE IF EXISTS Users ''')
+
+#cursor.execute('''
+    #DROP TABLE IF EXISTS Countries ''')
+
+
+#cursor.execute('''
+    #DROP TABLE IF EXISTS Years''')
+
+
+
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS Users (
      id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,                                

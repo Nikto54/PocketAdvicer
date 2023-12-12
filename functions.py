@@ -161,6 +161,8 @@ def found_film(message, bot, emot, link=API_LINK):
                 'X-API-KEY': '132Z32C-5Y044XJ-H0DXA4A-M5JCFYH',
             }
         ).json()
+        print(get_random_year_for_user(message.from_user.id))
+        print(response)
         print(link)
         if len(response['docs']) == 0:
             found_film(message, bot, emot)
@@ -184,6 +186,7 @@ def found_film(message, bot, emot, link=API_LINK):
                 'X-API-KEY': '132Z32C-5Y044XJ-H0DXA4A-M5JCFYH',
             }
         ).json()
+        print(response)
         if len(response['docs']) == 0:
             found_film(message, bot, emot)
         response = response['docs'][random.randint(0, len(response['docs']) - 1)]
@@ -206,6 +209,13 @@ def extends_found_film(message, bot, emot):
     item2 = types.KeyboardButton('Мне нравится фильм')
     markup.add(item1, item2)
     text = message.text
+    if text=='Другой фильм из моих предпочтений':
+        found_film(message, bot, emot, link=API_LINK + '&year={yearss}&countries.name={countriess}')
+        message = bot.send_message(message.chat.id, f'Выберите одну из опций ниже',
+                                   reply_markup=markup)
+        bot.register_next_step_handler(message, extends_found_film, bot, emot)
+
+
 
     if (text == "Случайный фильм" or text == "Другой фильм") :
         found_film(message, bot, emot)
@@ -227,6 +237,11 @@ def extends_found_film(message, bot, emot):
         bot.register_next_step_handler(message, ask_for_another_file, bot)
 
     if text == 'Мои предпочтения':
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton('Другой фильм')
+        item2 = types.KeyboardButton('Мне нравится фильм')
+        item3=types.KeyboardButton('Другой фильм из моих предпочтений')
+        markup.add(item1, item2,item3)
 
         if find_user(message.from_user.id):
             get_random_country_for_user(message.from_user.id)
