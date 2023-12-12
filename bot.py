@@ -12,11 +12,14 @@ bot = telebot.TeleBot('6317401550:AAG1C7BEb47jr4IFAzuktRvl6HOdKC7mnl4')
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
+    global user_id
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton('Текстовое сообщение')
     item2 = types.KeyboardButton('Аудио сообщение')
     item3 = types.KeyboardButton('Фото')
     markup.add(item1, item2, item3)
+    user_id=message.from_user.id
+
     bot.send_message(message.chat.id, 'Привет, я бот который на основе аудиофайла, текстового сообщения '
                                       'или же фото смогу подобрать фильм по твоему настроению', reply_markup=markup)
 

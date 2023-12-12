@@ -1,5 +1,5 @@
 import sqlite3
-from random import random
+import random
 
 
 def create_connection():
@@ -18,11 +18,12 @@ def find_user(tg_id):
 def get_random_year_for_user(user_id):
     conn = create_connection()
     cursor = conn.cursor()
-    print(user_id)
+    print('user id from random',user_id)
 
     cursor.execute('SELECT year_start, year_end FROM Years WHERE user_id = ?', (user_id,))
     intervals = cursor.fetchall()
     print(intervals)
+
 
     conn.close()
 
@@ -32,6 +33,7 @@ def get_random_year_for_user(user_id):
     random_interval = random.choice(intervals)
 
     random_year = random.randint(random_interval[0], random_interval[1])
+    print(random_year)
 
     return random_year
 
@@ -49,7 +51,7 @@ def get_random_country_for_user(user_id):
     result = cursor.fetchone()
 
     if result:
-        return result[0]
+        return str(result[0])
     conn.close()
 
 def add_user(tg_id):
@@ -58,6 +60,7 @@ def add_user(tg_id):
 
     cursor.execute('SELECT * FROM Users WHERE tg_id = ?', (tg_id,))
     count = cursor.fetchone()
+    print('tg_id user',tg_id)
 
     if not count:
         cursor.execute('INSERT INTO Users(tg_id) VALUES (?)', (tg_id,))
@@ -99,21 +102,18 @@ connection = create_connection()
 
 cursor = connection.cursor()
 
-cursor.execute('''
-SELECT year_start, year_end FROM Years WHERE user_id = 449408221
-''')
-print(cursor.fetchone())
 
 
-#cursor.execute('''
-    #DROP TABLE IF EXISTS Users ''')
 
-#cursor.execute('''
-    #DROP TABLE IF EXISTS Countries ''')
-
-
-#cursor.execute('''
-    #DROP TABLE IF EXISTS Years''')
+# cursor.execute('''
+#     DROP TABLE IF EXISTS Users ''')
+#
+# cursor.execute('''
+#     DROP TABLE IF EXISTS Countries ''')
+#
+#
+# cursor.execute('''
+#     DROP TABLE IF EXISTS Years''')
 
 
 

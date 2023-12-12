@@ -12,7 +12,9 @@ from telebot import types
 from database import (add_user, add_country, add_time_interval, get_random_country_for_user,get_random_year_for_user
 ,find_user)
 
+
 API_LINK = 'https://api.kinopoisk.dev/v1.4/movie?genres.name={genres_name}&page={count}'
+
 
 TRANSLATE_DICT_FER = {
     'angry': 'злость',
@@ -148,48 +150,47 @@ def process_photo_message(message, bot):
 
 def found_film(message, bot, emot, link=API_LINK):
     message = bot.send_message(message.chat.id, f'Начинается поиск фильма для вас\nПодождите пару секунд')
-    global response
-    if ('countries' and 'year') in link:
+    if 'countries' in link and 'year' in link:
         response = requests.get(
-            API_LINK.format(
+            link.format(
                 genres_name=GENRE_DICT[emot],
-                count=random.randint(1, 1000),
-                countriess=get_random_country_for_user(message.from_user.id),
-                years=get_random_year_for_user(message.from_user.id)
+                count=random.randint(1, 3),
+                countries=get_random_country_for_user(user_id),
+                year=get_random_year_for_user(user_id)
             ),
             headers={
-                'X-API-KEY': '132Z32C-5Y044XJ-H0DXA4A-M5JCFYH',
+                'X-API-KEY': '9JSA3MW-TFMM1JA-PJGFJHF-KP5YADW',
             }
         ).json()
-        print(get_random_year_for_user(message.from_user.id))
-        print(response)
-        print(link)
         if len(response['docs']) == 0:
             found_film(message, bot, emot)
         response = response['docs'][random.randint(0, len(response['docs']) - 1)]
+        print(response)
         if response.get('description') is not None and response.get('poster') != None and len(response['names']) > 1:
             bot.send_message(message.chat.id,
                 f'<b>{response["names"][0]["name"]} ({response["names"][1]["name"]})</b>\n\n'
-                f'{response["description"]}',
+                f'{response["description"]}{response["year"]}',
                 parse_mode='HTML',
             )
             bot.send_photo(message.chat.id, response["poster"]["url"])
+        return response
 
 
     else:
         response = requests.get(
             API_LINK.format(
                 genres_name=GENRE_DICT[emot],
-                count=random.randint(1, 1000)
+                count=random.randint(1, 300)
             ),
             headers={
-                'X-API-KEY': '132Z32C-5Y044XJ-H0DXA4A-M5JCFYH',
+                'X-API-KEY': '9JSA3MW-TFMM1JA-PJGFJHF-KP5YADW',
             }
         ).json()
-        print(response)
+
         if len(response['docs']) == 0:
             found_film(message, bot, emot)
         response = response['docs'][random.randint(0, len(response['docs']) - 1)]
+        print(response)
         if response.get('description') is not None and response.get('poster') != None and len(response['names']) > 1:
             bot.send_message(message.chat.id,
                 f'<b>{response["names"][0]["name"]} ({response["names"][1]["name"]})</b>\n\n'
@@ -197,21 +198,21 @@ def found_film(message, bot, emot, link=API_LINK):
                              parse_mode='HTML',
             )
             bot.send_photo(message.chat.id, response["poster"]["url"])
-
-
         else:
             found_film(message, bot, emot)
 
 
-def extends_found_film(message, bot, emot):
+def extends_found_film(message, bot, emot,response=None):
+    global user_id
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton('Другой фильм')
     item2 = types.KeyboardButton('Мне нравится фильм')
-    markup.add(item1, item2)
+    item3 = types.KeyboardButton('Другой фильм из моих предпочтений')
+    markup.add(item1, item2,item3)
     text = message.text
     if text=='Другой фильм из моих предпочтений':
-        found_film(message, bot, emot, link=API_LINK + '&year={yearss}&countries.name={countriess}')
-        message = bot.send_message(message.chat.id, f'Выберите одну из опций ниже',
+        found_film(message, bot, emot, link=API_LINK + '&year={year}&countries.name={countries}')
+        bot.send_message(message.chat.id, f'Выберите одну из опций ниже',
                                    reply_markup=markup)
         bot.register_next_step_handler(message, extends_found_film, bot, emot)
 
@@ -226,11 +227,13 @@ def extends_found_film(message, bot, emot):
         print(message.from_user.id)
         add_user(message.from_user.id)
         year = response['year']
-
         country_names = [country['name'] for country in response['countries']]
         for i in country_names:
             add_country(message.from_user.id, i)
-        add_time_interval(message.from_user.id, year - year % 10, year + 9 - year % 10)
+        if year in [2023,2022,2021,2020]:
+            add_time_interval(message.from_user.id, year - year % 10, 2023)
+        else:
+            add_time_interval(message.from_user.id, year - year % 10, year + 9 - year % 10)
         bot.send_message(message.chat.id, f'Фильм добавлен в ваши предпочтения,в следующий раз будут '
                                                     f'искаться похожие фильмы',
                                    reply_markup=types.ReplyKeyboardRemove())
@@ -244,16 +247,17 @@ def extends_found_film(message, bot, emot):
         markup.add(item1, item2,item3)
 
         if find_user(message.from_user.id):
-            get_random_country_for_user(message.from_user.id)
-            found_film(message, bot, emot,link=API_LINK+'&year={yearss}&countries.name={countriess}')
+            user_id=message.from_user.id
+            response=found_film(message, bot, emot,link=API_LINK+'&year={year}&countries.name={countries}')
             message = bot.send_message(message.chat.id, f'Выберите одну из опций ниже',
                                        reply_markup=markup)
-            bot.register_next_step_handler(message, extends_found_film, bot, emot)
+            bot.register_next_step_handler(message, extends_found_film, bot, emot,response)
         else:
             bot.send_message(message.chat.id, f'Вас еще нет в нашей базе,поэтому сначала нужно оценить любой фильм '
                                               f'из тех что будут дальше')
             message.text='Случайный фильм'
             extends_found_film(message, bot, emot)
+
 
 
 
