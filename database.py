@@ -105,15 +105,15 @@ cursor = connection.cursor()
 
 
 
-# cursor.execute('''
-#     DROP TABLE IF EXISTS Users ''')
-#
-# cursor.execute('''
-#     DROP TABLE IF EXISTS Countries ''')
-#
-#
-# cursor.execute('''
-#     DROP TABLE IF EXISTS Years''')
+cursor.execute('''
+    DROP TABLE IF EXISTS Users ''')
+
+cursor.execute('''
+    DROP TABLE IF EXISTS Countries ''')
+
+
+cursor.execute('''
+    DROP TABLE IF EXISTS Years''')
 
 
 

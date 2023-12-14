@@ -151,13 +151,14 @@ def process_photo_message(message, bot):
 def found_film(message, bot, emot, link=API_LINK):
     message = bot.send_message(message.chat.id, f'Начинается поиск фильма для вас\nПодождите пару секунд')
     if 'countries' in link and 'year' in link:
-        response = requests.get(
-            link.format(
+        tmp = link.format(
                 genres_name=GENRE_DICT[emot],
                 count=random.randint(1, 3),
                 countries=get_random_country_for_user(user_id),
                 year=get_random_year_for_user(user_id)
-            ),
+            )
+        response = requests.get(
+            tmp,
             headers={
                 'X-API-KEY': '9JSA3MW-TFMM1JA-PJGFJHF-KP5YADW',
             }
@@ -173,7 +174,6 @@ def found_film(message, bot, emot, link=API_LINK):
                 parse_mode='HTML',
             )
             bot.send_photo(message.chat.id, response["poster"]["url"])
-        return response
 
 
     else:
@@ -199,7 +199,8 @@ def found_film(message, bot, emot, link=API_LINK):
             )
             bot.send_photo(message.chat.id, response["poster"]["url"])
         else:
-            found_film(message, bot, emot)
+            response = found_film(message, bot, emot)
+    return response
 
 
 def extends_found_film(message, bot, emot,response=None):
@@ -219,10 +220,10 @@ def extends_found_film(message, bot, emot,response=None):
 
 
     if (text == "Случайный фильм" or text == "Другой фильм") :
-        found_film(message, bot, emot)
+        response = found_film(message, bot, emot)
         bot.send_message(message.chat.id, f'Выберите одну из опций ниже',
                                    reply_markup=markup)
-        bot.register_next_step_handler(message, extends_found_film, bot, emot)
+        bot.register_next_step_handler(message, extends_found_film, bot, emot, response)
     if text == 'Мне нравится фильм':
         print(message.from_user.id)
         add_user(message.from_user.id)
@@ -237,7 +238,7 @@ def extends_found_film(message, bot, emot,response=None):
         bot.send_message(message.chat.id, f'Фильм добавлен в ваши предпочтения,в следующий раз будут '
                                                     f'искаться похожие фильмы',
                                    reply_markup=types.ReplyKeyboardRemove())
-        bot.register_next_step_handler(message, ask_for_another_file, bot)
+        ask_for_another_file(message, bot)
 
     if text == 'Мои предпочтения':
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -251,7 +252,7 @@ def extends_found_film(message, bot, emot,response=None):
             response=found_film(message, bot, emot,link=API_LINK+'&year={year}&countries.name={countries}')
             message = bot.send_message(message.chat.id, f'Выберите одну из опций ниже',
                                        reply_markup=markup)
-            bot.register_next_step_handler(message, extends_found_film, bot, emot,response)
+            bot.register_next_step_handler(message, extends_found_film, bot, emot, response)
         else:
             bot.send_message(message.chat.id, f'Вас еще нет в нашей базе,поэтому сначала нужно оценить любой фильм '
                                               f'из тех что будут дальше')
